@@ -83,39 +83,40 @@ def test():
     input_filepath = "image.jpg"
     output_filepath = "written.txt"
 
-    print("Reading input file and calculate it's parameters.")
+    # print("Reading input file and calculate it's parameters.")
     binary_data = read_binary_data(input_filepath)
+    print(binary_data)
     parity_bit1 = str(parity_bit(binary_data))
     sum_modulo = str(modulo_s100(binary_data))
     crc_value, crc_len = calc_crc(binary_data)
 
-    print('Save data appending parameters to it.')
+    # print('Save data appending parameters to it.')
     write_binary_data(output_filepath, binary_data)
     write_binary_data(output_filepath, parity_bit1, "a")
     write_binary_data(output_filepath, sum_modulo, "a")
     write_binary_data(output_filepath, crc_value, "a")
 
-    print('Read distorted data.')
+    # print('Read distorted data.')
     distorted_binary_data = read_binary_data(output_filepath)
     parity_bit2 = str(int(distorted_binary_data[-(crc_len + 3): -(crc_len + 2)]))
     sum_modulo2 = str(int(distorted_binary_data[-(crc_len + 2): -crc_len]))
     crc_value2 = str(int(distorted_binary_data[-crc_len:]))
     distorted_binary_data = distorted_binary_data[:-(crc_len + 3)]
 
-    print('Adding noise to distorted data.')
+    # print('Adding noise to distorted data.')
     noised_data = noise(distorted_binary_data)
 
-    print('Getting noised data as bytes.')
+    # print('Getting noised data as bytes.')
     bytes_binary_data = bytes(noised_data)
 
-    print('Calculating noised data parameters.')
+    # print('Calculating noised data parameters.')
     parity_bit3 = str(parity_bit(bytes_binary_data))
     sum_modulo3 = str(modulo_s100(bytes_binary_data))
     crc_value3, crc_len2 = calc_crc(bytes_binary_data)
 
-    print('\nResult data:\n')
-    print("Original parity bit: {}\nNoised parity bit: {}\n".format(parity_bit2, parity_bit3))
-    print("Original sum: {}\nNoised sum: {}\n".format(sum_modulo2, sum_modulo3))
-    print("Original CRC value: {}\nNoised CRC value: {}".format(crc_value2, crc_value3))
+    # print('\nResult data:\n')
+    # print("Original parity bit: {}\nNoised parity bit: {}\n".format(parity_bit2, parity_bit3))
+    # print("Original sum: {}\nNoised sum: {}\n".format(sum_modulo2, sum_modulo3))
+    # print("Original CRC value: {}\nNoised CRC value: {}".format(crc_value2, crc_value3))
 
 test()
