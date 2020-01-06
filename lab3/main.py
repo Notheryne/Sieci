@@ -27,7 +27,8 @@ class Edge:
         return '[%s] From %s to %s (w: %s)' % (self._name, self._source, self._destination, self._weight)
 
     def __repr__(self):
-        return '%s, %s: %s -> %s' % (self._name, self._weight, self._source, self._destination)
+        return 'Edge (W %s, S %s, D %s)' % (self._weight, self._source, self._destination)
+        # return '(%s, %s, %s)' % (self._source-1, self._destination-1, self._weight)
 
 
 class Graph:
@@ -41,13 +42,13 @@ class Graph:
         else:
             raise ValueError('No initialization data provided!')
         if vertices:
-            self.vertices = vertices
+            self.vertices = set(vertices)
         else:
             self.vertices = set()
             for edge in self.data:
                 self.vertices.add(edge.s)
                 self.vertices.add(edge.d)
-                self.vertices = list(self.vertices)
+            self.vertices = list(self.vertices)
         self.parents = {vertex: vertex for vertex in self.vertices}
         self.ranks = {vertex: 0 for vertex in self.vertices}
         self.max_weight = max(self.data, key=lambda x: x.w).w
@@ -62,8 +63,7 @@ class Graph:
         data = [d.strip().split(',') for d in data]
         if skip_header:
             data = data[1:]
-        print(data)
-        self.data = [Edge('I am ' + str(i), weight=int(data[i][0]), source=int(data[i][1]),
+        self.data = [Edge('V <{0}>'.format(str(i)), weight=int(data[i][0]), source=int(data[i][1]),
                           destination=int(data[i][2])) for i in range(len(data))]
 
     def kruskal_find(self, vertex):
@@ -89,22 +89,86 @@ class Graph:
                 self.kruskal_union(edge.s, edge.d)
                 self.mst.append(edge)
         self.mst.sort(key=lambda x: x.w)
-        print(self.mst)
 
-    def prim(self):
-        costs = [self.max_weight + 1] * len(self.vertices)
-        edges = [None] * len(self.vertices)
-        result_forest = []
-        not_needed = []
-        for i in range(len(self.vertices)):
-            appearances = [edge for edge in self.data
-                           if edge.d == self.vertices[i]]
-            best_match = min(appearances, key=lambda x: x.w)
-            result_forest.append(best_match)
-            if not edges[i]:
-                edges[i] =
+    def build_adjacency_matrix(self):
+        m = [[0] * len(self.vertices) for _ in range(len(self.vertices))]
+        for edge in self.data:
+            m[edge.s][edge.d] = edge.w
+            m[edge.d][edge.s] = edge.w
 
-g = Graph(filepath='trees/2.txt')
-# print(g.data)
-# g.kruskal()
-# print(g.data)
+        return m
+
+    def boruvka_combine(self, setMatrix, e):
+        e0 = -1
+        e1 = -1
+        for i in range(0, len(setMatrix)):
+            if e[0] in setMatrix[i]:
+                e0 = i
+            if e[1] in setMatrix[i]:
+                e1 = i
+        setMatrix[e0] += setMatrix[e1]
+        del setMatrix[e1]
+
+    def boruvka(self):
+        adjacency_matrix = self.build_adjacency_matrix()
+        set_matrix = [[i] for i in self.vertices]
+        tmp = []
+        while len(set_matrix) > 1:
+            edges = []
+            for component in set_matrix:
+                edge = [999, [0, 0]]
+                for vertex in component:
+                    for i in range(0, len(adjacency_matrix[0])):
+                        if i not in component and adjacency_matrix[vertex][i] != 0:
+                            if edge[0] > adjacency_matrix[vertex][i]:
+                                edge[0] = adjacency_matrix[vertex][i]
+                                edge[1] = [vertex, i]
+                if edge[1][0] > edge[1][1]:
+                    edge[1][0], edge[1][1] = edge[1][1], edge[1][0]
+                if edge[1] not in edges:
+                    edges.append(edge[1])
+            for e in edges:
+                self.boruvka_combine(set_matrix, e)
+
+    def boruvka_save(self):
+        adjacency_matrix = self.build_adjacency_matrix()
+        set_matrix = [[i] for i in self.vertices]
+        tmp = []
+        while len(set_matrix) > 1:
+            edges = []
+            for component in set_matrix:
+                edge = [999, [0, 0]]
+                for vertex in component:
+                    for i in range(0, len(adjacency_matrix[0])):
+                        if i not in component and adjacency_matrix[vertex][i] != 0:
+                            if edge[0] > adjacency_matrix[vertex][i]:
+                                edge[0] = adjacency_matrix[vertex][i]
+                                edge[1] = [vertex, i]
+                if edge[1][0] > edge[1][1]:
+                    edge[1][0], edge[1][1] = edge[1][1], edge[1][0]
+                if edge[1] not in edges:
+                    edges.append(edge[1])
+            for e in edges:
+                self.boruvka_combine(set_matrix, e)
+            tmp = edges
+        for edge in tmp:
+            vertex = [
+                v for v in self.data
+                if v.s == edge[0] and v.d == edge[1]
+                or v.d == edge[0] and v.s == edge[1]
+            ]
+            self.mst.append(vertex[0])
+
+
+if __name__ == '__main__':
+    kruskal_g = Graph(filepath='trees/2.txt')
+    boruvka_g = Graph(filepath='trees/2.txt')
+    from timeit import timeit
+    times = 100000
+    kruskal_time = timeit(kruskal_g.kruskal, number=times)
+    boruvka_time = timeit(boruvka_g.boruvka, number=times)
+    boruvka_g.boruvka_save()
+    print('Kruskal result: ', kruskal_g.mst)
+    print('Kruskal time: ', kruskal_time)
+    print('Boruvka result: ', boruvka_g.mst)
+    print('Boruvka time: ', boruvka_time)
